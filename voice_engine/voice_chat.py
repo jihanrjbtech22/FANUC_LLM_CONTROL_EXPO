@@ -7,6 +7,7 @@ import subprocess
 import sys
 import json
 import os
+import argparse
 from pathlib import Path
 from typing import Optional
 
@@ -57,7 +58,22 @@ def send_to_handler(payload: dict) -> None:
         print(f"{RED}[Handler] The live handler disconnected. Restart it in another terminal.{RESET}")
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Voice-enabled FANUC chat interface")
+    parser.add_argument("--voice-model", default="tiny", help="faster-whisper model size")
+    parser.add_argument("--silence-threshold", type=float, default=0.08, help="Amplitude threshold for silence detection")
+    parser.add_argument("--silence-duration", type=float, default=0.5, help="Seconds of silence before transcription")
+    parser.add_argument("--min-duration", type=float, default=0.3, help="Minimum audio duration before transcription")
+    parser.add_argument("--min-transcript-chars", type=int, default=3, help="Minimum transcript length accepted")
+    parser.add_argument("--amplitude-accept-threshold", type=float, default=0.08, help="Minimum RMS amplitude accepted")
+    parser.add_argument("--confidence-logprob-threshold", type=float, default=-0.9, help="Minimum avg_logprob accepted")
+    parser.add_argument("--use-wake-word", action="store_true", help="Enable wake word mode if Picovoice key is configured")
+    return parser.parse_args()
+
+
 def main():
+    args = parse_args()
+
     print(f"\n{CRX_GREEN}{'='*60}")
     print("FANUC CRX Order Fulfillment - Voice Chat Interface")
     print(f"{'='*60}{RESET}\n")
@@ -77,7 +93,16 @@ def main():
         use_voice = True
         print(f"\n{BLUE}[VOICE] Initializing Whisper...{RESET}")
         try:
-            voice_input = VoiceInput(model="tiny")
+            voice_input = VoiceInput(
+                model=args.voice_model,
+                use_wake_word=args.use_wake_word,
+                silence_threshold=args.silence_threshold,
+                silence_duration=args.silence_duration,
+                min_duration=args.min_duration,
+                min_transcript_chars=args.min_transcript_chars,
+                amplitude_accept_threshold=args.amplitude_accept_threshold,
+                confidence_logprob_threshold=args.confidence_logprob_threshold,
+            )
             voice_input.start()
         except Exception as e:
             print(f"{RED}[ERROR] Failed to start voice engine: {e}{RESET}")

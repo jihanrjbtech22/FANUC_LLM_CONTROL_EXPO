@@ -48,6 +48,18 @@ python3 master_terminal_chat.py
 
 This starts both the robot handler and chat interface together.
 
+To launch the voice interface from the master script, use:
+
+```bash
+python3 master_terminal_chat.py --voice --voice-model tiny
+```
+
+You can also tune speech filtering from the same command line:
+
+```bash
+python3 master_terminal_chat.py --voice --silence-threshold 0.08 --confidence-logprob-threshold -0.7
+```
+
 **Options:**
 - Robot is pre-configured to `172.168.10.2:4880`
 - Edit `master_terminal_chat.py` to change robot IP/port

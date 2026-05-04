@@ -27,17 +27,27 @@ RESET = "\033[0m"
 # Audio parameters
 SAMPLE_RATE = 16000  # 16kHz for Whisper
 CHUNK_DURATION = 1  # seconds per chunk
-SILENCE_THRESHOLD = 0.02  # amplitude threshold for silence
-SILENCE_DURATION = 0.5  # seconds of silence to trigger transcription (faster)
-MIN_DURATION = 0.3  # minimum audio duration before transcribing
+DEFAULT_SILENCE_THRESHOLD = 0.08  # amplitude threshold for silence
+DEFAULT_SILENCE_DURATION = 0.5  # seconds of silence to trigger transcription (faster)
+DEFAULT_MIN_DURATION = 0.3  # minimum audio duration before transcribing
 # Confidence filtering
-MIN_TRANSCRIPT_CHARS = 3  # minimum characters required to accept a transcript
-AMPLITUDE_ACCEPT_THRESHOLD = 0.01  # require some minimum signal amplitude to accept
-CONFIDENCE_LOGPROB_THRESHOLD = -1.0  # if model provides avg_logprob, require > this (higher is better)
+DEFAULT_MIN_TRANSCRIPT_CHARS = 3  # minimum characters required to accept a transcript
+DEFAULT_AMPLITUDE_ACCEPT_THRESHOLD = 0.08  # require some minimum signal amplitude to accept
+DEFAULT_CONFIDENCE_LOGPROB_THRESHOLD = -0.9  # if model provides avg_logprob, require > this (higher is better)
 
 
 class VoiceInput:
-    def __init__(self, model: str = "tiny", use_wake_word: bool = True):
+    def __init__(
+        self,
+        model: str = "tiny",
+        use_wake_word: bool = True,
+        silence_threshold: float = DEFAULT_SILENCE_THRESHOLD,
+        silence_duration: float = DEFAULT_SILENCE_DURATION,
+        min_duration: float = DEFAULT_MIN_DURATION,
+        min_transcript_chars: int = DEFAULT_MIN_TRANSCRIPT_CHARS,
+        amplitude_accept_threshold: float = DEFAULT_AMPLITUDE_ACCEPT_THRESHOLD,
+        confidence_logprob_threshold: float = DEFAULT_CONFIDENCE_LOGPROB_THRESHOLD,
+    ):
         """
         Initialize voice input with faster-whisper and optional wake word.
 
@@ -49,6 +59,12 @@ class VoiceInput:
         self.whisper_model = None
         self.porcupine = None
         self.use_wake_word = use_wake_word and PORCUPINE_AVAILABLE
+        self.silence_threshold = silence_threshold
+        self.silence_duration = silence_duration
+        self.min_duration = min_duration
+        self.min_transcript_chars = min_transcript_chars
+        self.amplitude_accept_threshold = amplitude_accept_threshold
+        self.confidence_logprob_threshold = confidence_logprob_threshold
         self.is_listening = False
         self.audio_queue = queue.Queue()
         self.transcript_queue = queue.Queue()
@@ -123,7 +139,7 @@ class VoiceInput:
 
                     # Check for silence
                     amplitude = np.abs(data).mean()
-                    if amplitude < SILENCE_THRESHOLD:
+                    if amplitude < self.silence_threshold:
                         silence_count += 1
                     else:
                         silence_count = 0
@@ -133,8 +149,8 @@ class VoiceInput:
 
                     # If we have silence after recording, send to queue
                     if (
-                        silence_count > (SILENCE_DURATION / CHUNK_DURATION)
-                        and len(audio_buffer) > int(SAMPLE_RATE * MIN_DURATION)
+                        silence_count > (self.silence_duration / CHUNK_DURATION)
+                        and len(audio_buffer) > int(SAMPLE_RATE * self.min_duration)
                     ):
                         self.audio_queue.put(audio_buffer.copy())
                         audio_buffer = np.array([])
@@ -208,18 +224,18 @@ class VoiceInput:
                 reason = []
 
                 # Reject very short / empty transcriptions
-                if not text or len(text) < MIN_TRANSCRIPT_CHARS:
+                if not text or len(text) < self.min_transcript_chars:
                     accept = False
                     reason.append("too short")
 
                 # Require some signal amplitude
-                if rms < AMPLITUDE_ACCEPT_THRESHOLD:
+                if rms < self.amplitude_accept_threshold:
                     accept = False
                     reason.append("low amplitude")
 
                 # If model provided mean_logprob, require it be above threshold
                 if mean_conf is not None:
-                    if mean_conf < CONFIDENCE_LOGPROB_THRESHOLD:
+                    if mean_conf < self.confidence_logprob_threshold:
                         accept = False
                         reason.append(f"low model confidence ({mean_conf:.2f})")
 
