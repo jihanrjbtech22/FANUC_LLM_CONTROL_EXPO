@@ -3,7 +3,7 @@ import sys
 import os
 import json
 
-MODEL = 'llama3'  # Change this to your preferred model name
+MODEL = os.environ.get('OLLAMA_MODEL', 'llama3')  # Change or set OLLAMA_MODEL env var
 PRECONTEXT_FILE = os.path.join(os.path.dirname(__file__), 'precontext.txt')
 STRICT_JSON_SCHEMA = {
     "type": "object",
@@ -77,6 +77,19 @@ def is_valid_payload(payload):
 
 def main():
     client = ollama.Client()
+    # Resolve a usable model from the Ollama instance
+    try:
+        available = [m.model for m in client.list().models]
+    except Exception:
+        available = []
+    if MODEL in available:
+        selected_model = MODEL
+    else:
+        # prefer a model that contains the requested name, otherwise pick first available
+        candidates = [m for m in available if MODEL in m]
+        selected_model = candidates[0] if candidates else (available[0] if available else MODEL)
+    if selected_model != MODEL:
+        print(f"[Engine] requested model '{MODEL}' not found, using '{selected_model}' instead", file=sys.stderr)
     history = []
     precontext = load_precontext()
     if precontext:
@@ -93,16 +106,21 @@ def main():
                 continue
 
             response = client.chat(
-                model=MODEL,
+                model=selected_model,
                 messages=build_messages(history, user_input),
                 format=STRICT_JSON_SCHEMA,
+                options={
+                    "temperature": 0.1,
+                    "top_p": 0.2,
+                    "repeat_penalty": 1.1,
+                },
             )
             answer = response['message']['content']
             try:
                 payload = json.loads(answer)
             except json.JSONDecodeError:
                 correction = client.chat(
-                    model=MODEL,
+                    model=selected_model,
                     messages=build_messages(
                         history,
                         f"Return ONLY valid JSON that matches the required schema. Fix this output: {answer}",

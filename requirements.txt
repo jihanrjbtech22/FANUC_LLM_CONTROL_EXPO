@@ -1,0 +1,5 @@
+ollama
+numpy
+sounddevice
+faster-whisper
+opcua

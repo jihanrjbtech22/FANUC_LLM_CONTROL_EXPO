@@ -156,7 +156,6 @@ class VoiceInput:
                         audio_buffer = np.array([])
                         silence_count = 0
                         wake_word_found = False
-                        print(f"{YELLOW}[VOICE] Recording complete. Transcribing...{RESET}", flush=True)
 
         except Exception as e:
             print(f"{RED}[VOICE] Recording error: {e}{RESET}", flush=True)
@@ -177,8 +176,6 @@ class VoiceInput:
                 if max_val > 0:
                     audio_data = audio_data / max_val
 
-                print(f"{BLUE}[VOICE] Transcribing (faster-whisper)...{RESET}", flush=True)
-                
                 # Use faster-whisper's transcribe
                 segments, info = self.whisper_model.transcribe(
                     audio_data, language="en", beam_size=1
@@ -249,10 +246,6 @@ class VoiceInput:
                 if accept:
                     print(f"{GREEN}[VOICE] Transcribed: {text}{RESET}", flush=True)
                     self.transcript_queue.put(text)
-                else:
-                    print(f"{YELLOW}[VOICE] Rejected transcription ({', '.join(reason)}){RESET}", flush=True)
-                    if self.use_wake_word:
-                        print(f"{YELLOW}[VOICE] Say 'jarvis' to start...{RESET}", flush=True)
                         
             except Exception as e:
                 print(f"{RED}[VOICE] Transcription error: {e}{RESET}", flush=True)
