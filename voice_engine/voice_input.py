@@ -27,12 +27,12 @@ RESET = "\033[0m"
 # Audio parameters
 SAMPLE_RATE = 16000  # 16kHz for Whisper
 CHUNK_DURATION = 1  # seconds per chunk
-DEFAULT_SILENCE_THRESHOLD = 0.08  # amplitude threshold for silence
+DEFAULT_SILENCE_THRESHOLD = 0.010  # amplitude threshold for silence
 DEFAULT_SILENCE_DURATION = 0.5  # seconds of silence to trigger transcription (faster)
 DEFAULT_MIN_DURATION = 0.3  # minimum audio duration before transcribing
 # Confidence filtering
-DEFAULT_MIN_TRANSCRIPT_CHARS = 3  # minimum characters required to accept a transcript
-DEFAULT_AMPLITUDE_ACCEPT_THRESHOLD = 0.08  # require some minimum signal amplitude to accept
+DEFAULT_MIN_TRANSCRIPT_CHARS = 4  # minimum characters required to accept a transcript
+DEFAULT_AMPLITUDE_ACCEPT_THRESHOLD = 0.015  # require some minimum signal amplitude to accept
 DEFAULT_CONFIDENCE_LOGPROB_THRESHOLD = -0.9  # if model provides avg_logprob, require > this (higher is better)
 
 

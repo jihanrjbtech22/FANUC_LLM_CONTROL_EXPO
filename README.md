@@ -57,7 +57,7 @@ python3 master_terminal_chat.py --voice --voice-model tiny
 You can also tune speech filtering from the same command line:
 
 ```bash
-python3 master_terminal_chat.py --voice --silence-threshold 0.08 --confidence-logprob-threshold -0.7
+python3 master_terminal_chat.py --voice --silence-threshold 0.010 --amplitude-accept-threshold 0.015 --min-transcript-chars 4
 ```
 
 **Options:**
