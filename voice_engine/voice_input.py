@@ -30,6 +30,10 @@ CHUNK_DURATION = 1  # seconds per chunk
 SILENCE_THRESHOLD = 0.02  # amplitude threshold for silence
 SILENCE_DURATION = 0.5  # seconds of silence to trigger transcription (faster)
 MIN_DURATION = 0.3  # minimum audio duration before transcribing
+# Confidence filtering
+MIN_TRANSCRIPT_CHARS = 3  # minimum characters required to accept a transcript
+AMPLITUDE_ACCEPT_THRESHOLD = 0.01  # require some minimum signal amplitude to accept
+CONFIDENCE_LOGPROB_THRESHOLD = -1.0  # if model provides avg_logprob, require > this (higher is better)
 
 
 class VoiceInput:
@@ -165,11 +169,71 @@ class VoiceInput:
                 
                 text = " ".join([segment.text for segment in segments]).strip()
 
-                if text:
+                # Try to compute confidence from model if available
+                confs = []
+                for segment in segments:
+                    # faster-whisper may provide avg_logprob on segment objects
+                    seg_conf = None
+                    if hasattr(segment, "avg_logprob"):
+                        try:
+                            seg_conf = float(getattr(segment, "avg_logprob"))
+                        except Exception:
+                            seg_conf = None
+                    # Some implementations put scores in segment.no_speech_prob
+                    if seg_conf is None and hasattr(segment, "no_speech_prob"):
+                        try:
+                            # no_speech_prob: lower means more speech; invert to be comparable
+                            seg_conf = -float(getattr(segment, "no_speech_prob"))
+                        except Exception:
+                            seg_conf = None
+                    if seg_conf is not None:
+                        confs.append(seg_conf)
+
+                mean_conf = None
+                if len(confs) > 0:
+                    mean_conf = sum(confs) / len(confs)
+
+                # Additional info-level check (some transcribers return no_speech_prob)
+                info_no_speech = None
+                try:
+                    if isinstance(info, dict) and "no_speech_prob" in info:
+                        info_no_speech = float(info.get("no_speech_prob"))
+                except Exception:
+                    info_no_speech = None
+
+                # Amplitude check (final audio_data normalized earlier)
+                rms = float(np.sqrt(np.mean(np.square(audio_data)))) if audio_data.size > 0 else 0.0
+
+                accept = True
+                reason = []
+
+                # Reject very short / empty transcriptions
+                if not text or len(text) < MIN_TRANSCRIPT_CHARS:
+                    accept = False
+                    reason.append("too short")
+
+                # Require some signal amplitude
+                if rms < AMPLITUDE_ACCEPT_THRESHOLD:
+                    accept = False
+                    reason.append("low amplitude")
+
+                # If model provided mean_logprob, require it be above threshold
+                if mean_conf is not None:
+                    if mean_conf < CONFIDENCE_LOGPROB_THRESHOLD:
+                        accept = False
+                        reason.append(f"low model confidence ({mean_conf:.2f})")
+
+                # If info-level no_speech_prob exists, reject when it's high
+                if info_no_speech is not None:
+                    if info_no_speech > 0.6:
+                        accept = False
+                        reason.append(f"no_speech_prob {info_no_speech:.2f}")
+
+                if accept:
                     print(f"{GREEN}[VOICE] Transcribed: {text}{RESET}", flush=True)
                     self.transcript_queue.put(text)
                 else:
-                    print(f"{YELLOW}[VOICE] No speech detected{RESET}", flush=True)
+                    print(f"{YELLOW}[VOICE] Rejected transcription ({', '.join(reason)}){RESET}", flush=True)
                     if self.use_wake_word:
                         print(f"{YELLOW}[VOICE] Say 'jarvis' to start...{RESET}", flush=True)
                         

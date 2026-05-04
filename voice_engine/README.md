@@ -38,6 +38,17 @@ Choose mode `1` for voice input. The system will listen for speech, transcribe i
 5. Transcribed text is returned to chat
 6. Chat sends order to handler → robot registers written
 
+## Confidence Filtering
+
+The engine applies several checks before sending text to the LLM to avoid random-noise transcripts:
+
+- **Minimum text length:** short fragments are rejected (default 3 chars)
+- **Amplitude check:** audio RMS must exceed a minimum threshold
+- **Model confidence:** if the model exposes `avg_logprob`/`no_speech_prob`, the engine uses those scores to reject low-confidence transcriptions
+- **Fallbacks:** when model scores are unavailable, amplitude + length checks are used
+
+You can adjust thresholds in `voice_input.py` (constants near the top): `MIN_TRANSCRIPT_CHARS`, `AMPLITUDE_ACCEPT_THRESHOLD`, `CONFIDENCE_LOGPROB_THRESHOLD`.
+
 ## Performance
 
 | Model | Speed (M1/M2) | Accuracy | Size |
