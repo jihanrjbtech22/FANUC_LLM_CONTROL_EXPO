@@ -6,6 +6,7 @@ Speech-to-text transcription using **faster-whisper** (optimized Whisper). Conti
 
 - **voice_input.py** — Core voice input handler with faster-whisper integration
 - **voice_chat.py** — Voice-enabled chat interface
+- **voice_tuner.py** — Interactive microphone tuning tool for noise/confidence filtering
 - **__init__.py** — Package initialization
 
 ## Usage
@@ -18,6 +19,19 @@ python3 voice_chat.py
 ```
 
 Choose mode `1` for voice input. The system will listen for speech, transcribe it with faster-whisper, and send it to the LLM.
+
+### Tune Voice Filtering
+
+```bash
+cd voice_engine
+python3 voice_tuner.py
+```
+
+The tuner records two samples locally:
+- ambient noise
+- a normal spoken command
+
+It prints measured RMS/peak values, local transcription confidence, and a suggested command you can paste into `master_terminal_chat.py`.
 
 ## Features
 
@@ -43,11 +57,11 @@ Choose mode `1` for voice input. The system will listen for speech, transcribe i
 The engine applies several checks before sending text to the LLM to avoid random-noise transcripts:
 
 - **Minimum text length:** short fragments are rejected (default 3 chars)
-- **Amplitude check:** audio RMS must exceed a minimum threshold
+- **Amplitude check:** raw audio RMS must exceed a minimum threshold
 - **Model confidence:** if the model exposes `avg_logprob`/`no_speech_prob`, the engine uses those scores to reject low-confidence transcriptions
 - **Fallbacks:** when model scores are unavailable, amplitude + length checks are used
 
-You can adjust thresholds in `voice_input.py` (constants near the top): `MIN_TRANSCRIPT_CHARS`, `AMPLITUDE_ACCEPT_THRESHOLD`, `CONFIDENCE_LOGPROB_THRESHOLD`.
+You can adjust thresholds from the command line via `master_terminal_chat.py --voice ...` or tune them interactively with `voice_tuner.py`.
 
 ## Performance
 
@@ -67,9 +81,9 @@ Edit **voice_input.py**:
 voice_input = VoiceInput(model="base", use_wake_word=False)
 
 # Adjust silence detection
-SILENCE_THRESHOLD = 0.02  # amplitude threshold (higher = more sensitive)
-SILENCE_DURATION = 0.5    # seconds of silence before transcribe
-MIN_DURATION = 0.3        # minimum audio duration to transcribe
+DEFAULT_SILENCE_THRESHOLD = 0.08  # amplitude threshold (higher = more sensitive)
+DEFAULT_SILENCE_DURATION = 0.5    # seconds of silence before transcribe
+DEFAULT_MIN_DURATION = 0.3        # minimum audio duration to transcribe
 ```
 
 ## Dependencies

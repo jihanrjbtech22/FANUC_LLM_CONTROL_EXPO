@@ -132,6 +132,7 @@ Edit `LLM_engine/precontext.txt` to customize:
 - `Robot_handler/current_cart.json` — Current order state
 - `voice_engine/voice_input.py` — faster-whisper speech-to-text with silence detection
 - `voice_engine/voice_chat.py` — Voice-enabled chat interface
+- `voice_engine/voice_tuner.py` — Interactive voice threshold tuning tool
 - `test_voice_integration.py` — Integration test for voice engine
 
 ## Voice Engine
@@ -157,6 +158,9 @@ The voice engine uses **faster-whisper** (OpenAI Whisper optimized for speed) wi
 ```bash
 # Integration test
 python3 test_voice_integration.py
+
+# Tune thresholds using a live microphone capture
+python3 voice_engine/voice_tuner.py
 
 # Run voice chat
 python3 voice_engine/voice_chat.py

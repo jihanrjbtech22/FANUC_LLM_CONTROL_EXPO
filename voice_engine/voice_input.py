@@ -170,8 +170,9 @@ class VoiceInput:
                 continue
 
             try:
-                # Ensure audio is float32 and normalized to [-1, 1]
+                # Keep the raw RMS for tuning, then normalize for transcription.
                 audio_data = audio_data.astype(np.float32)
+                raw_rms = float(np.sqrt(np.mean(np.square(audio_data)))) if audio_data.size > 0 else 0.0
                 max_val = np.max(np.abs(audio_data))
                 if max_val > 0:
                     audio_data = audio_data / max_val
@@ -217,8 +218,8 @@ class VoiceInput:
                 except Exception:
                     info_no_speech = None
 
-                # Amplitude check (final audio_data normalized earlier)
-                rms = float(np.sqrt(np.mean(np.square(audio_data)))) if audio_data.size > 0 else 0.0
+                # Amplitude check uses the raw, pre-normalized signal so tuning is meaningful.
+                rms = raw_rms
 
                 accept = True
                 reason = []
