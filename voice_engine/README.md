@@ -1,6 +1,6 @@
 # Voice Engine
 
-Speech-to-text transcription using **faster-whisper** (optimized Whisper). Continuously listens for voice commands and transcribes them in real-time with high speed.
+Speech-to-text transcription using **faster-whisper** on the local machine. The voice stack listens on the microphone, transcribes speech locally, and forwards the resulting text to the chat pipeline.
 
 ## Files
 
@@ -35,22 +35,22 @@ It prints measured RMS/peak values, local transcription confidence, and a sugges
 
 ## Features
 
-- **🚀 Fast transcription** — Uses faster-whisper with ctranslate2 backend (5-10x faster than openai-whisper!)
-- **Int8 quantization** — Optimized model quantization for M1/M2 Macs
+- **Fast transcription** — Uses faster-whisper with the ctranslate2 backend
+- **CPU-friendly defaults** — Uses the `int8` compute path by default
 - **Real-time listening** — Listens continuously on the microphone
 - **Auto-detection** — Detects speech automatically via amplitude threshold
-- **Silence-based trigger** — Sends audio for transcription after silence is detected (0.5s by default)
-- **Low latency** — "tiny" model: ~1 sec per transcription on M1/M2
-- **Better accuracy** — "base" model: ~2 sec per transcription, significantly more accurate
+- **Silence-based trigger** — Sends audio for transcription after silence is detected
+- **Low latency** — The `tiny` model is the fastest option
+- **Better accuracy** — Larger models improve accuracy at the cost of speed
 
 ## How It Works
 
-1. Microphone listens continuously in background thread
+1. Microphone listens continuously in a background thread
 2. Audio chunks are buffered as they arrive (float32 format)
-3. When 0.5+ second of silence is detected after speech, audio is sent to faster-whisper
-4. Faster-whisper transcribes using ctranslate2 backend (optimized for ARM64)
+3. When silence is detected after speech, audio is sent to faster-whisper
+4. Faster-whisper transcribes using the local ctranslate2 backend
 5. Transcribed text is returned to chat
-6. Chat sends order to handler → robot registers written
+6. Chat sends the order to the handler and the robot registers are updated
 
 ## Confidence Filtering
 
@@ -89,23 +89,25 @@ DEFAULT_MIN_DURATION = 0.3        # minimum audio duration to transcribe
 ## Dependencies
 
 - `faster-whisper` - Fast Whisper inference
-- `ctranslate2` - ONNX backend for inference
-- `onnxruntime` - ONNX runtime (ARM64 optimized)
 - `sounddevice` - Microphone input
 - `numpy` - Audio processing
 
-## Wake Word Detection (Optional)
+## Wake Word Detection
 
-Wake word detection using Porcupine requires a free API key from [console.picovoice.ai](https://console.picovoice.ai). Currently disabled by default. To enable:
+Wake-word support depends on the current voice backend configuration. The default project setup runs without wake word, and the browser UI uses the Python voice engine rather than a browser microphone API.
 
-```python
-# Get free access key from console.picovoice.ai
-voice_input = VoiceInput(model="tiny", use_wake_word=True)
+If wake-word mode is enabled in code, it should be treated as an optional advanced setup, not part of the basic first-run path.
+
+## Recommended First Test
+
+Run the smoke test after installing dependencies:
+
+```bash
+python3 ../test_voice_integration.py
 ```
 
-### Requirements
+If that passes, start voice chat with:
 
-- `openai-whisper` — Speech-to-text model
-- `sounddevice` — Microphone input
-- `numpy` — Audio processing
-- `torch` — Whisper dependency
+```bash
+python3 ../master_terminal_chat.py --voice --voice-model tiny
+```
