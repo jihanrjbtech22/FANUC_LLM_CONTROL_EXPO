@@ -49,3 +49,7 @@ Robot_handler/robot_handler.pipe
 # Allow tracking frontend build
 !Fanuc-frontend/dist/
 !Fanuc-frontend/dist/**
+
+# Allow tracking frontend build
+!Fanuc-frontend/dist/
+!Fanuc-frontend/dist/**
