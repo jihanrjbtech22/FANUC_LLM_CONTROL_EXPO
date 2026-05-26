@@ -16,18 +16,16 @@ RED = "\033[91m"
 RESET = "\033[0m"
 
 ITEM_NAMES = [
-    "Nuttiess Chocolate",
-    "NIVEA",
-    "Shampoo",
-    "Appy Fizz",
-    "Cough Syrup",
-    "Coca Cola",
-    "Tea Botx",
-    "Pringles",
-    "Noodles",
-    "Bar",
-    "Ponds",
-    "Dove",
+    "Coke Zero",
+    "Diet Coke",
+    "Cough Medicine",
+    "Crepe Bandage",
+    "Ball_Red",
+    "Ball_Yellow",
+    "Ball_Blue",
+    "Capsule Bottle",
+    "Tea",
+    "Bearing",
 ]
 
 CURRENT_CART_PATH = os.path.join(os.path.dirname(__file__), "current_cart.json")
@@ -112,7 +110,10 @@ class RegisterOPCUA:
             print(f"{RED}[ERROR] Failed to write registers: {e}{RESET}", flush=True)
 
     def dump(self):
-        print(f"{RED}[DEBUG] Registers written to robot successfully{RESET}", flush=True)
+        if self.connected:
+            print(f"{RED}[DEBUG] Registers written to robot successfully{RESET}", flush=True)
+        else:
+            print(f"{RED}[DEBUG] Robot connection unavailable (no robot register write){RESET}", flush=True)
 
     def __del__(self):
         if self.client and self.connected:
@@ -157,21 +158,16 @@ def handle_llm_output(llm_json: Dict, register_handler: Optional = None, current
     current_cart = load_current_cart(current_cart_path)
     deltas = compute_deltas(current_cart, new_cart)
     adds = [delta if delta > 0 else 0 for delta in deltas]
-    removes = [-delta if delta < 0 else 0 for delta in deltas]
 
     print(f"{RED}[DEBUG] Current cart:{RESET}\n{RED}{format_cart(current_cart)}{RESET}", flush=True)
     print(f"{RED}[DEBUG] Incoming cart:{RESET}\n{RED}{format_cart(new_cart)}{RESET}", flush=True)
     print(f"{RED}[DEBUG] Deltas:{RESET} {dict(zip(ITEM_NAMES, deltas))}", flush=True)
 
+    # Bring/add operations are mapped in register order R[51]..R[60].
+    # Negative deltas (removes) are ignored.
     if any(value > 0 for value in adds):
-        print(f"{RED}[DEBUG] Entering vend mode (R[13]=1){RESET}", flush=True)
-        register_handler.write_register(13, 1)
-        register_handler.write_registers(1, adds)
-
-    if any(value > 0 for value in removes):
-        print(f"{RED}[DEBUG] Entering remove mode (R[13]=0){RESET}", flush=True)
-        register_handler.write_register(13, 0)
-        register_handler.write_registers(51, removes)
+        print(f"{RED}[DEBUG] Writing bring registers R[51..] with adds{RESET}", flush=True)
+        register_handler.write_registers(51, adds)
 
     register_handler.dump()
     save_current_cart(new_cart, current_cart_path)
@@ -204,6 +200,9 @@ def watch_pipe(pipe_path: str = FIFO_PATH, current_cart_path: str = CURRENT_CART
             register_handler = RegisterSimulator()
         else:
             register_handler = RegisterOPCUA(robot_ip)
+            if not register_handler.connected:
+                print(f"{RED}[DEBUG] Falling back to simulator mode (robot unreachable){RESET}", flush=True)
+                register_handler = RegisterSimulator()
     else:
         register_handler = RegisterSimulator()
 
@@ -243,6 +242,9 @@ def main():
             register_handler = RegisterSimulator()
         else:
             register_handler = RegisterOPCUA(args.robot_ip, args.robot_port)
+            if not register_handler.connected:
+                print(f"{RED}[DEBUG] Falling back to simulator mode (robot unreachable){RESET}", flush=True)
+                register_handler = RegisterSimulator()
     else:
         register_handler = RegisterSimulator()
 

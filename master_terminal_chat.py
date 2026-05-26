@@ -36,7 +36,7 @@ PIPE_PATH = ROBOT_HANDLER_DIR / "robot_handler.pipe"
 CURRENT_CART = ROBOT_HANDLER_DIR / "current_cart.json"
 
 # Robot connection
-ROBOT_IP = "172.168.10.2"
+ROBOT_IP = "192.168.1.100"
 ROBOT_PORT = 4880
 
 # Voice defaults
@@ -377,18 +377,16 @@ def main():
     # Reset cart to zero
     try:
         initial_cart = {
-            "Nuttiess Chocolate": 0,
-            "NIVEA": 0,
-            "Shampoo": 0,
-            "Appy Fizz": 0,
-            "Cough Syrup": 0,
-            "Coca Cola": 0,
-            "Tea Botx": 0,
-            "Pringles": 0,
-            "Noodles": 0,
-            "Bar": 0,
-            "Ponds": 0,
-            "Dove": 0,
+            "Coke Zero": 0,
+            "Diet Coke": 0,
+            "Cough Medicine": 0,
+            "Crepe Bandage": 0,
+            "Ball_Red": 0,
+            "Ball_Yellow": 0,
+            "Ball_Blue": 0,
+            "Capsule Bottle": 0,
+            "Tea": 0,
+            "Bearing": 0,
         }
         import json
         with open(CURRENT_CART, "w") as f:
@@ -408,7 +406,7 @@ def main():
         sys.exit(1)
     
     print(f"\n{CRX_GREEN}[MASTER] System ready. Type your order!{RESET}\n")
-    
+
     # Wait for chat to finish
     try:
         chat_proc.wait()

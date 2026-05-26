@@ -42,22 +42,20 @@ except Exception:
     VoiceInput = None
     VOICE_AVAILABLE = False
 
-ROBOT_IP = "172.168.10.2"
+ROBOT_IP = "192.168.1.100"
 ROBOT_PORT = 4880
 
 ITEM_NAMES = [
-    "Nuttiess Chocolate",
-    "NIVEA",
-    "Shampoo",
-    "Appy Fizz",
-    "Cough Syrup",
-    "Coca Cola",
-    "Tea Botx",
-    "Pringles",
-    "Noodles",
-    "Bar",
-    "Ponds",
-    "Dove",
+    "Coke Zero",
+    "Diet Coke",
+    "Cough Medicine",
+    "Crepe Bandage",
+    "Ball_Red",
+    "Ball_Yellow",
+    "Ball_Blue",
+    "Capsule Bottle",
+    "Tea",
+    "Bearing",
 ]
 
 EMPTY_CART = {name: 0 for name in ITEM_NAMES}
